@@ -2,49 +2,76 @@ package com.example.mynewapp1
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.widget.Toast
-import androidx.lifecycle.Observer
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import android.widget.Toolbar
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import com.example.mynewapp1.forecast.CurrentForecastFragmentDirections
+import com.example.mynewapp1.location.LocationEntryFragmentDirections
+import androidx.navigation.ui.setupWithNavController
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), appNavigator {
 
-    private val forecastRepository = ForcastRepository()
+
+    private lateinit var TempDisplaySettingManager: tempDisplaySettingManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Toast.makeText(this,"OnCreate",Toast.LENGTH_SHORT).show()
 
-        val zipCode: EditText = findViewById(R.id.ZipCode)
+        TempDisplaySettingManager = tempDisplaySettingManager(this)
 
-        
-        val ClickButton: Button = findViewById(R.id.button)
-        ClickButton.setOnClickListener{
-            val s: String = zipCode.text.toString()
-            forecastRepository.loadForecast(s)
+        val navController = findNavController(R.id.nav_host_fragment)
+        val appBarConfiguration = AppBarConfiguration(navController.graph)
+        findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar).setupWithNavController(navController,appBarConfiguration)
+
+    }
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.settings_menu,menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        //handle item selection
+        return when(item.itemId){
+            R.id.tempDisplaySetting -> {
+                //do something
+                showTempDisplaySettingDialog(this,TempDisplaySettingManager)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
+    }
 
-        val forecastList: RecyclerView = findViewById(R.id.foreCastList)
-        forecastList.layoutManager = LinearLayoutManager(this)
+    override fun navigateTocurrentForecast(zipcode: String) {
+//        supportFragmentManager
+//            .beginTransaction()
+//            .replace(R.id.fragmentContainer, CurrentForecastFragment.newInstance(zipcode))
+//            .commit()
 
-        val dailyForecastAdapter = dailyForecastAdapter() {
-            val msg = getString(R.string.forecast_clicked_format,it.temp, it.description)
+        val action = LocationEntryFragmentDirections.actionLocationEntryFragmentToCurrentForecastFragment2()
+        findNavController(R.id.nav_host_fragment).navigate(action)
+    }
 
-            Toast.makeText(this,msg, Toast.LENGTH_SHORT).show()
-        }
-        forecastList.adapter = dailyForecastAdapter
+    override fun navigateToLocationEntry() {
+//        supportFragmentManager
+//            .beginTransaction()
+//            .replace(R.id.fragmentContainer, LocationEntryFragment())
+//            .commit()
 
+        val action = CurrentForecastFragmentDirections.actionCurrentForecastFragmentToLocationEntryFragment()
+        findNavController(R.id.nav_host_fragment).navigate(action)
+    }
 
-
-        val weeklyForecastObserver = Observer<List<DailyForcast>>{ForecastItems->
-            //update our list adapter
-            dailyForecastAdapter.submitList(ForecastItems)
-        }
-        forecastRepository.weeklyForcast.observe(this,weeklyForecastObserver)
-
+    override fun navigateToForecastDetails(forecast: DailyForcast) {
+        val action = CurrentForecastFragmentDirections.actionCurrentForecastFragmentToForecastDetailsFragment(forecast.temp,forecast.description)
+        findNavController(R.id.nav_host_fragment).navigate(action)
     }
 
 }
